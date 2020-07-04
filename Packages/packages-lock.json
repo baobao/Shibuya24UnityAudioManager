@@ -14,6 +14,13 @@
       "dependencies": {},
       "hash": "8361c4c50a4f375cfac3cdb67ebd3babf15c42d8"
     },
+    "com.demigiant.dotween": {
+      "version": "1.2.32",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://package.openupm.com"
+    },
     "com.unity.collab-proxy": {
       "version": "1.2.16",
       "depth": 0,

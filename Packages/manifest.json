@@ -40,6 +40,17 @@
     "com.unity.modules.xr": "1.0.0",
     "com.dbrizov.naughtyattributes": "https://github.com/dbrizov/NaughtyAttributes.git#upm",
     "info.shibuya24.common": "https://github.com/baobao/Shibuya24UnityCommon.git?path=Assets/Shibuya24UnityCommon",
-    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask"
-  }
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+    "com.demigiant.dotween": "1.2.32"
+  },
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.demigiant.dotween",
+        "com.openupm"
+      ]
+    }
+  ]
 }
