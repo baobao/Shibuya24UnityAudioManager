@@ -9,7 +9,7 @@ public class Sample : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Shibuya24UnityAudioManager.InitinalizeIfNeed();
+        Shibuya24UnityAudioManager.InitializeIfNeed();
     }
 
     // Update is called once per frame
@@ -35,7 +35,7 @@ public class Sample : MonoBehaviour
         Shibuya24UnityAudioManager.Play("se/se_fx3");
     }
 
-    [Button("PlayBGM2")]
+    [Button("PlayBGM1")]
     void PlayBGM1()
     {
         Shibuya24UnityAudioManager.Play("bgm/bgm_test1");
@@ -47,6 +47,41 @@ public class Sample : MonoBehaviour
         Shibuya24UnityAudioManager.Play("bgm/bgm_test2");
     }
 
-    [SerializeField] private AudioClip _clip1;
-    [SerializeField] private AudioClip _clip2;
+    [Button("StopBGM")]
+    void StopBgm()
+    {
+        Shibuya24UnityAudioManager.StopBgm();
+    }
+
+    private bool _isSeMute;
+
+    [Button("Mute SE")]
+    void ToggleSEMute()
+    {
+        Shibuya24UnityAudioManager.SetMute(AudioChannel.SE, _isSeMute);
+        _isSeMute = _isSeMute == false;
+    }
+
+    private bool _isBgmMute;
+
+    [Button("Mute BGM")]
+    void ToggleBGMMute()
+    {
+        Shibuya24UnityAudioManager.SetMute(AudioChannel.BGM, _isBgmMute);
+        _isBgmMute = _isBgmMute == false;
+    }
+
+    [OnValueChanged("OnValueChangeBgmVolume")] [Range(0, 1f)]public float bgmVolume;
+    [OnValueChanged("OnValueChangeSeVolume")] [Range(0, 1f)]public float seVolume;
+
+    private void OnValueChangeBgmVolume()
+    {
+        Debug.Log($"OnValueChangeBgmVolume : {bgmVolume}");
+        Shibuya24UnityAudioManager.SetVolume(AudioChannel.BGM, bgmVolume);
+    }
+
+    private void OnValueChangeSeVolume()
+    {
+        Shibuya24UnityAudioManager.SetVolume(AudioChannel.SE, seVolume);
+    }
 }
