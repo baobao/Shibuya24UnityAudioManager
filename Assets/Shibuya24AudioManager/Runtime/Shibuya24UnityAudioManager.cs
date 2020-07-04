@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace info.shibuya24.Audio
 {
+    /// <summary>
+    /// オーディオチャンネル
+    /// TODO Voice
+    /// </summary>
     public enum AudioChannel
     {
         None = 0,
@@ -15,52 +19,10 @@ namespace info.shibuya24.Audio
         BGM = 2,
     }
 
-    public class AudioInfo
-    {
-        /// <summary>
-        /// 使用中ソースフラグ
-        /// </summary>
-        public bool IsUsing => source != null && source.clip != null && source.isPlaying;
-
-        public AudioSource source;
-        public long playingId;
-        public string path;
-
-        public void Initialize()
-        {
-            source.Stop();
-            playingId = -1;
-            path = null;
-        }
-
-        public void Stop()
-        {
-            source.Stop();
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        public async UniTask FadeOut(float duration = 0.5f)
-        {
-
-        }
-
-        public void Update()
-        {
-
-        }
-    }
-
-    public class AudioSetting
-    {
-        public int seChannelCount = 16;
-    }
-
     /// <summary>
     /// UnityのAudioシステムを使用したマネージャ
     /// </summary>
-    public class Shibuya24UnityAudioManager : MonoBehaviourSingleton<Shibuya24UnityAudioManager>
+    public sealed class Shibuya24UnityAudioManager : MonoBehaviourSingleton<Shibuya24UnityAudioManager>
     {
         /// <summary>
         /// BGMの同時再生数は2固定
@@ -82,6 +44,19 @@ namespace info.shibuya24.Audio
         private static int _playingUniqueId = 0;
         private static int NextPlayingUniqueId => _playingUniqueId++;
 
+        public static string CurrentBgmPath { get; private set; }
+
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+        /// <summary>
+        /// 再生中BGMチャンネルマップ
+        /// </summary>
+        public static readonly Dictionary<AudioChannel, List<AudioInfo>> PlayingChannelMap =
+            new Dictionary<AudioChannel, List<AudioInfo>>
+            {
+                {AudioChannel.SE, new List<AudioInfo>()},
+                {AudioChannel.BGM, new List<AudioInfo>()}
+            };
+#else
         /// <summary>
         /// 再生中BGMチャンネルマップ
         /// </summary>
@@ -92,42 +67,38 @@ namespace info.shibuya24.Audio
                 {AudioChannel.BGM, new List<AudioInfo>()}
             };
 
+#endif
+
         public static IAudioResourceLoader Loader { get; set; }
 
         private static bool _isInitialized;
 
-        /// <summary>
-        /// 現在再生中BGMパス
-        /// </summary>
-        public static string CurrentBgmKey { get; private set; }
+        protected override void OnAwake()
+        {
+            DontDestroyOnLoad(gameObject);
+        }
 
         private void OnDestroy()
         {
             // staticの初期化
+            _isInitialized = false;
             PlayingChannelMap.Clear();
             _playingUniqueId = 0;
-            CurrentBgmKey = null;
             Loader = null;
-        }
-
-        void Update()
-        {
-            foreach (var channelInfoList in PlayingChannelMap.Values)
-            {
-                for (int i = 0; i < channelInfoList.Count; i++)
-                {
-                    var info = channelInfoList[i];
-                    info.Update();
-                }
-            }
         }
 
         /// <summary>
         /// 初期化
         /// </summary>
-        public static void InitinalizeIfNeed(AudioSetting setting = null, IAudioResourceLoader loader = null)
+        public static void InitializeIfNeed(AudioSetting setting = null, IAudioResourceLoader loader = null)
         {
-            if (_isInitialized) return;
+            if (_isInitialized)
+            {
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+                Debug.Log("Already Initialized");
+#endif
+                return;
+            }
 
             if (setting == null)
             {
@@ -145,47 +116,26 @@ namespace info.shibuya24.Audio
             _isInitialized = true;
         }
 
-        /// <summary>
-        /// チャンネルの初期化
-        /// </summary>
-        private static void InitializeChannel(AudioSetting setting)
-        {
-            if (_isInitialized) return;
-            PlayingChannelMap[AudioChannel.SE].Clear();
-            PlayingChannelMap[AudioChannel.BGM].Clear();
-            var go = Instance.gameObject;
-            for (int i = 0; i < setting.seChannelCount; i++)
-            {
-                PlayingChannelMap[AudioChannel.SE].Add(new AudioInfo()
-                {
-                    source = go.AddComponent<AudioSource>()
-                });
-            }
-
-            for (int i = 0; i < BgmPlayCount; i++)
-            {
-                PlayingChannelMap[AudioChannel.BGM].Add(new AudioInfo()
-                {
-                    source = go.AddComponent<AudioSource>()
-                });
-            }
-        }
 
         /// <summary>
         /// サウンド再生
         /// </summary>
         public static async UniTask<int> Play(string audioPath)
         {
-            if (CurrentBgmKey == audioPath)
+            if (CurrentBgmPath == audioPath)
             {
-                // 同じBGMが再生していたら何もしない
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+                Debug.Log($"同じBGMが再生中 : {audioPath}");
+#endif
                 return -1;
             }
 
             var channel = ResolveChannel(audioPath);
             if (channel == AudioChannel.None)
             {
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
                 Debug.Log($"再生できませんでした : {audioPath}");
+#endif
                 return -1;
             }
 
@@ -203,8 +153,110 @@ namespace info.shibuya24.Audio
         public static void Stop(AudioChannel ch, int playId)
         {
             var infoList = GetPlayingAudioInfoList(ch);
-            var info = infoList.Find(x => x.playingId == playId);
+            var info = infoList.Find(x => x.PlayingId == playId);
             info?.Stop();
+        }
+
+        /// <summary>
+        /// 現在再生中のBGMをストップする
+        /// </summary>
+        public static async UniTask StopBgm(float duration = 1f)
+        {
+            CurrentBgmPath = null;
+            var infoList = PlayingChannelMap[AudioChannel.BGM];
+            await UniTask.WhenAll(infoList.Select(x => x.FadeOut(duration)));
+        }
+
+        /// <summary>
+        /// ボリュームのセット
+        /// </summary>
+        /// <param name="ch">チャンネル</param>
+        /// <param name="volume">0~1f</param>
+        public static void SetVolume(AudioChannel ch, float volume)
+        {
+            if (ch == AudioChannel.None) return;
+            // Clamp
+            volume = Mathf.Clamp01(volume);
+            var list = PlayingChannelMap[ch];
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].SetGlobalVolume(volume);
+            }
+        }
+
+        /// <summary>
+        /// ミュート設定のセット
+        /// </summary>
+        public static void SetMute(AudioChannel ch, bool isMute)
+        {
+            if (ch == AudioChannel.None) return;
+            var list = PlayingChannelMap[ch];
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i].SetMute(isMute);
+            }
+        }
+
+        /// <summary>
+        /// チャンネルの初期化
+        /// </summary>
+        private static void InitializeChannel(AudioSetting setting)
+        {
+            if (_isInitialized) return;
+            PlayingChannelMap[AudioChannel.SE].Clear();
+            PlayingChannelMap[AudioChannel.BGM].Clear();
+
+            var initBgmVolume = ChannelVolumeMap[AudioChannel.SE];
+            var initSeVolume = ChannelVolumeMap[AudioChannel.BGM];
+
+            var go = Instance.gameObject;
+            for (var i = 0; i < setting.seChannelCount; i++)
+            {
+                PlayingChannelMap[AudioChannel.SE].Add(
+                    new AudioInfo(go.AddComponent<AudioSource>())
+                        .SetGlobalVolume(initSeVolume)
+                );
+            }
+
+            for (var i = 0; i < BgmPlayCount; i++)
+            {
+                PlayingChannelMap[AudioChannel.BGM].Add(
+                    new AudioInfo(go.AddComponent<AudioSource>())
+                        .SetGlobalVolume(initBgmVolume)
+                );
+            }
+        }
+
+
+        /// <summary>
+        /// 指定パスがBGMとして再生されているか返却
+        /// </summary>
+        private static int GetPlayingBgm(string audioPath)
+        {
+            if (string.IsNullOrEmpty(audioPath)) return -1;
+            var infoList = PlayingChannelMap[AudioChannel.BGM];
+            var info = infoList.Find(x => x.IsUsing && x.ResourcePath == audioPath && x.IsStopping == false);
+            if (info != null)
+            {
+                return info.PlayingId;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// 再生中のBGMを返却する
+        /// </summary>
+        private static int GetPlayingBgm()
+        {
+            var infoList = PlayingChannelMap[AudioChannel.BGM];
+            var info = infoList.Find(x => x.IsUsing);
+            if (info != null)
+            {
+                return info.PlayingId;
+            }
+
+            return -1;
         }
 
         /// <summary>
@@ -213,56 +265,97 @@ namespace info.shibuya24.Audio
         private static async UniTask<int> PlayBgm(string bgmPath)
         {
             // 現在再生中のBGMをフェードアウトさせる
-            if (string.IsNullOrEmpty(CurrentBgmKey) == false)
+            var playingId = GetPlayingBgm(CurrentBgmPath);
+
+            CurrentBgmPath = bgmPath;
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+            Debug.Log($"playingId : {playingId}");
+#endif
+            if (playingId >= 0)
             {
-                FadeOut(AudioChannel.BGM, CurrentBgmKey).Forget();
-                return await FadeIn(bgmPath);
+                FadeOut(AudioChannel.BGM, playingId).Forget();
+                playingId = await FadeIn(AudioChannel.BGM, CurrentBgmPath);
+                return playingId;
             }
 
             // 無音状態からの再生
-            return await LoadAndPlayAudioClip(AudioChannel.BGM, bgmPath);
-        }
-
-        private static async UniTask FadeOut(AudioChannel ch, string path)
-        {
-            var info = GetAudioInfoWithPath(ch, path);
-            if (info == null)
-            {
-                return;
-            }
-
-            info.FadeOut();
-        }
-
-        private static async UniTask<int> FadeIn(string bgmPath)
-        {
-            return -1;
+            playingId = await LoadAndPlayAudioClip(AudioChannel.BGM, bgmPath);
+            return playingId;
         }
 
         /// <summary>
-        /// 指定したチャンネル、パスを指定してAudioInfoを返却する
+        /// フェードアウト
         /// </summary>
-        private static AudioInfo GetAudioInfoWithPath(AudioChannel ch, string path)
+        private static async UniTask FadeOut(AudioChannel ch, int playingId)
+        {
+            var info = GetPlayingAudioInfo(ch, playingId);
+            if (info == null)
+            {
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+                Debug.Log($"Can't FadeOut. {ch} / {playingId}");
+#endif
+                return;
+            }
+
+            await info.FadeOut();
+        }
+
+        /// <summary>
+        /// フェードイン
+        /// </summary>
+        private static async UniTask<int> FadeIn(AudioChannel ch, string path)
+        {
+            var playingId = await LoadAndPlayAudioClip(ch, path, true);
+            var info = GetPlayingAudioInfo(ch, playingId);
+            if (info == null)
+            {
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+                Debug.Log($"Can't FadeIn. {ch} / {path}");
+#endif
+                return -1;
+            }
+
+            await info.FadeIn();
+            return playingId;
+        }
+
+        private static AudioInfo GetPlayingAudioInfo(AudioChannel ch, int playingId)
         {
             var infoList = PlayingChannelMap[ch];
-            return infoList.Find(x => x.path == path);
+            return infoList.Find(x => x.PlayingId == playingId);
+        }
+
+        /// <summary>
+        /// 指定したチャンネル、パスを指定して再生中のAudioInfoを返却する
+        /// </summary>
+        private static AudioInfo GetPlayingAudioInfoWithPath(AudioChannel ch, string path)
+        {
+            var infoList = PlayingChannelMap[ch];
+            return infoList.Find(x => x.ResourcePath == path);
         }
 
         /// <summary>
         /// ロードしてAudioClipを再生させる
         /// </summary>
-        private static async UniTask<int> LoadAndPlayAudioClip(AudioChannel ch, string audioPath)
+        private static async UniTask<int> LoadAndPlayAudioClip(AudioChannel ch, string audioPath,
+            bool isStartVolumeZero = false)
         {
             var clip = await Loader.Load(audioPath);
+            if (clip == null)
+            {
+                // Load Fail
+                return -1;
+            }
+
             var audioInfoList = GetPlayingAudioInfoList(ch);
             var audioInfo = GetUnUseOrOldestAudioInfo(audioInfoList);
 
             var nextId = NextPlayingUniqueId;
 
-            audioInfo.source.clip = clip;
-            audioInfo.path = audioPath;
-            audioInfo.playingId = nextId;
-            audioInfo.source.Play();
+            audioInfo.SetAudioClip(clip)
+                .SetPlayingId(nextId)
+                .SetResourcePath(audioPath)
+                .Play(isStartVolumeZero);
 
             return nextId;
         }
@@ -283,8 +376,12 @@ namespace info.shibuya24.Audio
                 }
             }
 
-            // TODO 全部使用中だった場合
-            info = audioInfoList[0];
+            info = audioInfoList.Find(x => x.IsStopping);
+            if (info == null)
+            {
+                info = audioInfoList[0];
+            }
+
             // 使用中のものを予めストップして初期化しておく
             info.Initialize();
             return info;
@@ -310,8 +407,9 @@ namespace info.shibuya24.Audio
             {
                 return AudioChannel.BGM;
             }
-
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
             Debug.LogError($"Invalid audioPath : {audioPath}");
+#endif
             return AudioChannel.None;
         }
     }
