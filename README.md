@@ -1,4 +1,4 @@
-# shibuya24UnityAudioManager
+# Shibuya24UnityAudioManager
 
 Unityのデフォルトオーディオシステムを使ったオーディオ管理クラス
 
