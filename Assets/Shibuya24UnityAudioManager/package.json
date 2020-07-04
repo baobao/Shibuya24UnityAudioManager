@@ -3,7 +3,7 @@
   "displayName": "Shibuya24UnityAudioManager",
   "version": "0.0.1",
   "unity": "2018.4",
-  "description": "My Unity Common Library.",
+  "description": "My Unity Audio Manager.",
   "keywords": [ "Unity", "C#", "Audio" ],
   "license": "MIT",
   "category": "Unity",
