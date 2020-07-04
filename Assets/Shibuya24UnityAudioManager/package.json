@@ -1,0 +1,11 @@
+{
+  "name": "info.shibuya24.unity.audiomanager",
+  "displayName": "Shibuya24UnityAudioManager",
+  "version": "0.0.1",
+  "unity": "2018.4",
+  "description": "My Unity Common Library.",
+  "keywords": [ "Unity", "C#", "Audio" ],
+  "license": "MIT",
+  "category": "Unity",
+  "dependencies": {}
+}
