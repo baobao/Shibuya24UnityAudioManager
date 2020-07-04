@@ -34,3 +34,7 @@ sysinfo.txt
 .idea/
 Assets/Plugins/Editor/JetBrains
 Assets/Plugins/Editor/JetBrains.meta
+
+# Project
+Assets/Sample/Resources/
+Assets/Sample/Resources.meta
