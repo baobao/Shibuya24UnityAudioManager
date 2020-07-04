@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.cysharp.unitask": {
+      "version": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "4a89e3ea86cf1f36754847ee1c11bdbc86d43919"
+    },
     "com.dbrizov.naughtyattributes": {
       "version": "https://github.com/dbrizov/NaughtyAttributes.git#upm",
       "depth": 0,
@@ -71,6 +78,13 @@
       "dependencies": {
         "com.unity.modules.ui": "1.0.0"
       }
+    },
+    "info.shibuya24.common": {
+      "version": "https://github.com/baobao/Shibuya24UnityCommon.git?path=Assets/Shibuya24UnityCommon",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "9855b54e28aefa208ad620b2b332b8513a99c9d9"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
