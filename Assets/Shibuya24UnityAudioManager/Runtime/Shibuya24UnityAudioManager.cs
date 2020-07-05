@@ -24,6 +24,8 @@ namespace info.shibuya24.Audio
     /// </summary>
     public sealed class Shibuya24UnityAudioManager : MonoBehaviourSingleton<Shibuya24UnityAudioManager>
     {
+        public const string Version = "0.0.2";
+
         /// <summary>
         /// BGMの同時再生数は2固定
         /// </summary>
@@ -113,6 +115,20 @@ namespace info.shibuya24.Audio
 
             Loader = loader;
 
+#if ENABLE_LOCALSAVE_SHIBUYA24_AUDIO
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+                Debug.Log("Enable AudioLocalSave");
+#endif
+            // Apply Initialize LocalSetting
+            SetVolume(AudioChannel.BGM, AudioLocalSave.GetVolume(AudioChannel.BGM));
+            SetVolume(AudioChannel.SE, AudioLocalSave.GetVolume(AudioChannel.SE));
+            SetMute(AudioChannel.BGM, AudioLocalSave.GetMute(AudioChannel.BGM));
+            SetMute(AudioChannel.SE, AudioLocalSave.GetMute(AudioChannel.SE));
+#else
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+            Debug.Log("Disable AudioLocalSave");
+#endif
+#endif
             _isInitialized = true;
         }
 
@@ -175,6 +191,9 @@ namespace info.shibuya24.Audio
         public static void SetVolume(AudioChannel ch, float volume)
         {
             if (ch == AudioChannel.None) return;
+#if ENABLE_LOCALSAVE_SHIBUYA24_AUDIO
+            AudioLocalSave.SetVolume(ch, volume);
+#endif
             // Clamp
             volume = Mathf.Clamp01(volume);
             var list = PlayingChannelMap[ch];
@@ -190,6 +209,9 @@ namespace info.shibuya24.Audio
         public static void SetMute(AudioChannel ch, bool isMute)
         {
             if (ch == AudioChannel.None) return;
+#if ENABLE_LOCALSAVE_SHIBUYA24_AUDIO
+            AudioLocalSave.SetMute(ch, isMute);
+#endif
             var list = PlayingChannelMap[ch];
             for (int i = 0; i < list.Count; i++)
             {
@@ -269,7 +291,8 @@ namespace info.shibuya24.Audio
 
             CurrentBgmPath = bgmPath;
 #if ENABLE_DEBUG_SHIBUYA24_AUDIO
-            Debug.Log($"playingId : {playingId}");
+            var msg = playingId < 0 ? "Not Playing" : $"playingId : {playingId.ToString()}";
+            Debug.Log($"current Bgm => {msg}");
 #endif
             if (playingId >= 0)
             {

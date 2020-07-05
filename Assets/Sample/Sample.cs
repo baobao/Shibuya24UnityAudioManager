@@ -6,10 +6,22 @@ using UnityEngine;
 
 public class Sample : MonoBehaviour
 {
-    // Start is called before the first frame update
+    [OnValueChanged("OnValueChangeBgmVolume")] [Range(0, 1f)]public float bgmVolume;
+    [OnValueChanged("OnValueChangeSeVolume")] [Range(0, 1f)]public float seVolume;
+    private bool _isSeMute;
+    private bool _isBgmMute;
+
     void Start()
     {
         Shibuya24UnityAudioManager.InitializeIfNeed();
+
+        // Apply LocalSave
+#if ENABLE_LOCALSAVE_SHIBUYA24_AUDIO
+        bgmVolume = AudioLocalSave.GetVolume(AudioChannel.BGM);
+        seVolume = AudioLocalSave.GetVolume(AudioChannel.SE);
+        _isBgmMute = AudioLocalSave.GetMute(AudioChannel.BGM);
+        _isSeMute = AudioLocalSave.GetMute(AudioChannel.SE);
+#endif
     }
 
     // Update is called once per frame
@@ -53,8 +65,6 @@ public class Sample : MonoBehaviour
         Shibuya24UnityAudioManager.StopBgm();
     }
 
-    private bool _isSeMute;
-
     [Button("Mute SE")]
     void ToggleSEMute()
     {
@@ -62,7 +72,6 @@ public class Sample : MonoBehaviour
         _isSeMute = _isSeMute == false;
     }
 
-    private bool _isBgmMute;
 
     [Button("Mute BGM")]
     void ToggleBGMMute()
@@ -70,9 +79,6 @@ public class Sample : MonoBehaviour
         Shibuya24UnityAudioManager.SetMute(AudioChannel.BGM, _isBgmMute);
         _isBgmMute = _isBgmMute == false;
     }
-
-    [OnValueChanged("OnValueChangeBgmVolume")] [Range(0, 1f)]public float bgmVolume;
-    [OnValueChanged("OnValueChangeSeVolume")] [Range(0, 1f)]public float seVolume;
 
     private void OnValueChangeBgmVolume()
     {
