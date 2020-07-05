@@ -289,7 +289,8 @@ namespace info.shibuya24.Audio
 
             CurrentBgmPath = bgmPath;
 #if ENABLE_DEBUG_SHIBUYA24_AUDIO
-            Debug.Log($"playingId : {playingId}");
+            var msg = playingId < 0 ? "Not Playing" : $"playingId : {playingId.ToString()}";
+            Debug.Log($"current Bgm => {msg}");
 #endif
             if (playingId >= 0)
             {
