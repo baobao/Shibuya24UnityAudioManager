@@ -113,6 +113,20 @@ namespace info.shibuya24.Audio
 
             Loader = loader;
 
+#if ENABLE_LOCALSAVE_SHIBUYA24_AUDIO
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+                Debug.Log("Enable AudioLocalSave");
+#endif
+            // Apply Initialize LocalSetting
+            SetVolume(AudioChannel.BGM, AudioLocalSave.GetVolume(AudioChannel.BGM));
+            SetVolume(AudioChannel.SE, AudioLocalSave.GetVolume(AudioChannel.SE));
+            SetMute(AudioChannel.BGM, AudioLocalSave.GetMute(AudioChannel.BGM));
+            SetMute(AudioChannel.SE, AudioLocalSave.GetMute(AudioChannel.SE));
+#else
+#if ENABLE_DEBUG_SHIBUYA24_AUDIO
+            Debug.Log("Disable AudioLocalSave");
+#endif
+#endif
             _isInitialized = true;
         }
 
@@ -175,6 +189,9 @@ namespace info.shibuya24.Audio
         public static void SetVolume(AudioChannel ch, float volume)
         {
             if (ch == AudioChannel.None) return;
+#if ENABLE_LOCALSAVE_SHIBUYA24_AUDIO
+            AudioLocalSave.SetVolume(ch, volume);
+#endif
             // Clamp
             volume = Mathf.Clamp01(volume);
             var list = PlayingChannelMap[ch];
@@ -190,6 +207,9 @@ namespace info.shibuya24.Audio
         public static void SetMute(AudioChannel ch, bool isMute)
         {
             if (ch == AudioChannel.None) return;
+#if ENABLE_LOCALSAVE_SHIBUYA24_AUDIO
+            AudioLocalSave.SetMute(ch, isMute);
+#endif
             var list = PlayingChannelMap[ch];
             for (int i = 0; i < list.Count; i++)
             {
