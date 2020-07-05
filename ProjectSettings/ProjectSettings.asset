@@ -541,7 +541,7 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLWasmStreaming: 0
   scriptingDefineSymbols:
-    7: ENABLE_DEBUG_SHIBUYA24_AUDIO
+    7: ENABLE_DEBUG_SHIBUYA24_AUDIO;ENABLE_LOCALSAVE_SHIBUYA24_AUDIO
   platformArchitecture: {}
   scriptingBackend: {}
   il2cppCompilerConfiguration: {}
