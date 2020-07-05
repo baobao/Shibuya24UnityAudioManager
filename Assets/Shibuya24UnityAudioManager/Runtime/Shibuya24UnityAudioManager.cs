@@ -24,6 +24,8 @@ namespace info.shibuya24.Audio
     /// </summary>
     public sealed class Shibuya24UnityAudioManager : MonoBehaviourSingleton<Shibuya24UnityAudioManager>
     {
+        public const string Version = "0.0.2";
+
         /// <summary>
         /// BGMの同時再生数は2固定
         /// </summary>
